@@ -124,7 +124,7 @@ jobs:
         with:
           # Temporary project name that'll never actually get used
           projectName: dotcom:testing-commercial
-          configPath: ./bundle/riff-raff.yaml
+          configPath: ./riff-raff.yaml
           contentDirectories: |
             frontend-static/test_commercial_bundles:
-              - bundle/dist
+              - dist
