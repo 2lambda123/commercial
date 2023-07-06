@@ -127,4 +127,4 @@ jobs:
           configPath: ./riff-raff.yaml
           contentDirectories: |
             frontend-static/test_commercial_bundles:
-              - dist
+              - dist/bundle/prod
