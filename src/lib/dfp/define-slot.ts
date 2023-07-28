@@ -108,6 +108,34 @@ const allowSafeFrameToExpand = (slot: googletag.Slot) => {
 	return slot;
 };
 
+const createGoogletagEventListeners = once(() => {
+	console.log('Adding Event listeners');
+
+	window.googletag
+		.pubads()
+		.addEventListener('slotRenderEnded', function (event) {
+			const slot = event.slot;
+			console.log(
+				'SlotRenderEndedEvent. Ad response for slot',
+				slot.getSlotElementId(),
+				'received. Response:',
+				JSON.parse(JSON.stringify(slot.getResponseInformation())),
+			);
+		});
+
+	window.googletag
+		.pubads()
+		.addEventListener('slotResponseReceived', function (event) {
+			const slot = event.slot;
+			console.log(
+				'slotResponseReceived. Ad response for slot',
+				slot.getSlotElementId(),
+				'received. Response:',
+				JSON.parse(JSON.stringify(slot.getResponseInformation())),
+			);
+		});
+});
+
 const defineSlot = (
 	adSlotNode: HTMLElement,
 	sizeMapping: SizeMapping,
@@ -141,6 +169,8 @@ const defineSlot = (
 			allowSafeFrameToExpand(slot);
 		}
 	}
+
+	createGoogletagEventListeners();
 
 	if (!slot) {
 		throw new Error(`Could not define slot for ${id}`);

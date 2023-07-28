@@ -110,6 +110,18 @@ class Advert {
 		this.node = adSlotNode;
 		this.sizes = this.generateSizeMapping(additionalSizeMapping);
 
+		if (this.id === 'dfp-ad--right') {
+			console.log('sizeMapping', this.sizes);
+			this.sizes.mobile = this.sizes.mobile?.slice(0, 2);
+		}
+
+		if (
+			this.id === 'dfp-ad--right' ||
+			this.id === 'dfp-ad--top-above-nav'
+		) {
+			console.log(this.id, 'sizeMapping', this.sizes);
+		}
+
 		const slotDefinition = defineSlot(
 			adSlotNode,
 			this.sizes,
