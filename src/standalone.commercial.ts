@@ -33,7 +33,6 @@ import { init as initHighMerch } from 'lib/high-merch';
 import { init as initIpsosMori } from 'lib/ipsos-mori';
 import { init as initMobileSticky } from 'lib/mobile-sticky';
 import { reloadPageOnConsentChange } from 'lib/reload-page-on-consent-change';
-import { removeConsentedAdsOnConsentChange } from 'lib/remove-consented-ads-on-consent-change';
 import { removeDisabledSlots as closeDisabledSlots } from 'lib/remove-slots';
 import { init as setAdTestCookie } from 'lib/set-adtest-cookie';
 import { init as setAdTestInLabelsCookie } from 'lib/set-adtest-in-labels-cookie';
@@ -75,7 +74,6 @@ const commercialBaseModules: Modules = [];
 // remaining modules not necessary to load an ad
 const commercialExtraModules: Modules = [
 	['cm-adFreeSlotRemoveFronts', adFreeSlotRemove],
-	['cm-removeConsentedAdsOnConsentChange', removeConsentedAdsOnConsentChange],
 	['cm-closeDisabledSlots', closeDisabledSlots],
 	['cm-comscore', initComscore],
 	['cm-ipsosmori', initIpsosMori],
