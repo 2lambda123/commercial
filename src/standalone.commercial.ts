@@ -32,6 +32,7 @@ import { init as initRedplanet } from 'lib/dfp/redplanet';
 import { init as initHighMerch } from 'lib/high-merch';
 import { init as initIpsosMori } from 'lib/ipsos-mori';
 import { init as initMobileSticky } from 'lib/mobile-sticky';
+import { reloadPageOnConsentChange } from 'lib/reload-page-on-consent-change';
 import { removeConsentedAdsOnConsentChange } from 'lib/remove-consented-ads-on-consent-change';
 import { removeDisabledSlots as closeDisabledSlots } from 'lib/remove-slots';
 import { init as setAdTestCookie } from 'lib/set-adtest-cookie';
@@ -81,6 +82,7 @@ const commercialExtraModules: Modules = [
 	['cm-teadsCookieless', initTeadsCookieless],
 	['cm-trackScrollDepth', initTrackScrollDepth],
 	['cm-trackGpcSignal', initTrackGpcSignal],
+	['cm-reloadPageOnConsentChange', reloadPageOnConsentChange],
 ];
 
 if (!commercialFeatures.adFree) {
