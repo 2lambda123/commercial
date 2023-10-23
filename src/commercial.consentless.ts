@@ -1,4 +1,5 @@
 import type { ConsentState } from '@guardian/consent-management-platform/dist/types';
+import { reloadPageOnConsentChange } from 'lib/reload-page-on-consent-change';
 import { initArticleInline } from './lib/consentless/dynamic/article-inline';
 import { initExclusionSlot } from './lib/consentless/dynamic/exclusion-slot';
 import { initLiveblogInline } from './lib/consentless/dynamic/liveblog-inline';
@@ -19,6 +20,7 @@ const bootConsentless = async (
 		initFixedSlots(),
 		initArticleInline(),
 		initLiveblogInline(),
+		reloadPageOnConsentChange(),
 	];
 
 	//this is added so that we can load the subscriber cookie for DCR pages and correctly hide ads
