@@ -1,4 +1,3 @@
-import { log } from '@guardian/libs';
 import { adSizes } from 'core/ad-sizes';
 import { createAdSlot } from 'core/create-ad-slot';
 import { getCurrentBreakpoint } from 'detect/detect-breakpoint';
@@ -19,56 +18,11 @@ import type {
 const MAX_ADS = 8;
 
 /**
- * Multiplier of screen height that determines the distance from
- * the top of the page that we can start placing ads.
- */
-const PAGE_TOP_MULTIPLIER = 1.5;
-
-/**
  * Multiplier of screen height that sets the minimum distance that two ads can be placed.
  */
-const AD_SPACE_MULTIPLIER = 2;
+const AD_GAP_MULTIPLIER = 1.5;
 
 let AD_COUNTER = 0;
-let WINDOWHEIGHT: number;
-let IS_SERVER_SIDE_MODE = false;
-let firstSlot: HTMLElement | undefined;
-
-const getSpaceFillerRules = (shouldUpdate: boolean): SpacefinderRules => {
-	let prevSlot: SpacefinderItem | undefined;
-
-	const isEnoughSpaceBetweenSlots = (
-		prevSlot: SpacefinderItem,
-		slot: SpacefinderItem,
-	) => Math.abs(slot.top - prevSlot.top) > WINDOWHEIGHT * AD_SPACE_MULTIPLIER;
-
-	const filterSlot = (slot: SpacefinderItem) => {
-		if (!prevSlot) {
-			prevSlot = slot;
-			return !shouldUpdate;
-		}
-
-		if (isEnoughSpaceBetweenSlots(prevSlot, slot)) {
-			prevSlot = slot;
-			return true;
-		}
-
-		return false;
-	};
-
-	return {
-		bodySelector: '.js-liveblog-body',
-		slotSelector: ' > .block',
-		fromBottom: shouldUpdate,
-		startAt: shouldUpdate ? firstSlot : undefined,
-		absoluteMinAbove: shouldUpdate ? 0 : WINDOWHEIGHT * PAGE_TOP_MULTIPLIER,
-		minAbove: 0,
-		minBelow: 0,
-		clearContentMeta: 0,
-		selectors: {},
-		filter: filterSlot,
-	};
-};
 
 const getSlotName = (isMobile: boolean, slotCounter: number): string => {
 	if (isMobile) {
@@ -80,13 +34,11 @@ const getSlotName = (isMobile: boolean, slotCounter: number): string => {
 
 const insertAdAtPara = (para: Node) => {
 	const isMobile = getCurrentBreakpoint() === 'mobile';
-	const container: HTMLElement = document.createElement('div');
 
-	let className = `ad-slot-container`;
-	if (IS_SERVER_SIDE_MODE) {
-		className += ` ad-slot-${isMobile ? 'mobile' : 'desktop'}`;
-	}
-	container.className = className;
+	const container: HTMLElement = document.createElement('div');
+	container.className = `ad-slot-container ad-slot-${
+		isMobile ? 'mobile' : 'desktop'
+	}`;
 
 	const ad = createAdSlot('inline', {
 		name: getSlotName(isMobile, AD_COUNTER),
@@ -126,120 +78,177 @@ const insertAds: SpacefinderWriter = async (paras) => {
 			AD_COUNTER += 1;
 		}
 	}
+
 	await Promise.all(fastdomPromises);
 };
 
-const onUpdate = () => {
-	// eslint-disable-next-line no-use-before-define -- circular reference
-	stopListening();
-	const rules = getSpaceFillerRules(true);
-	// eslint-disable-next-line no-use-before-define -- circular reference
-	void fill(rules);
+const fillSpace = (rules: SpacefinderRules) => {
+	const options: SpacefinderOptions = { pass: 'inline1' };
+
+	return spaceFiller.fillSpace(rules, insertAds, options);
 };
 
-const startListening = () => {
-	document.addEventListener('liveblog:blocks-updated', onUpdate);
+const shouldInsertAd = (
+	blockAboveAd: SpacefinderItem,
+	candidateBlock: SpacefinderItem,
+	windowHeight: number,
+) =>
+	Math.abs(blockAboveAd.bottom - candidateBlock.bottom) >
+	windowHeight * AD_GAP_MULTIPLIER;
+
+const getSpaceFillerRules = (
+	startBlock: HTMLElement,
+	windowHeight: number,
+): SpacefinderRules => {
+	// This is always the content block above the highest inline ad slot on the page.
+	// When a new ad slot is inserted, this will become the first content block above it.
+	let prevSlot: SpacefinderItem | undefined;
+	const filterSlot = (slot: SpacefinderItem) => {
+		if (!prevSlot) {
+			prevSlot = slot;
+			return false;
+		}
+
+		if (shouldInsertAd(prevSlot, slot, windowHeight)) {
+			prevSlot = slot;
+			return true;
+		}
+
+		return false;
+	};
+
+	return {
+		bodySelector: '.js-liveblog-body',
+		slotSelector: ' > .block',
+		fromBottom: true,
+		startAt: startBlock,
+		absoluteMinAbove: 0,
+		minAbove: 0,
+		minBelow: 0,
+		clearContentMeta: 0,
+		selectors: {},
+		filter: filterSlot,
+	};
 };
 
-const stopListening = () => {
-	document.removeEventListener('liveblog:blocks-updated', onUpdate);
-};
+/**
+ * Finds the first content block to start searching for space to insert ad slots.
+ *
+ * If there is at least one inline ad slot on the page, this will be the content
+ * block above it (there'll be at least one - we never insert ads above content blocks).
+ *
+ * if there are no inline ad slots on the page, this is the content block at the bottom of the page.
+ */
+const getFirstContentBlock = async (
+	topAdvert: Element | null,
+): Promise<Element | null> => {
+	if (topAdvert === null) {
+		return fastdom.measure(() => {
+			const allBlocks = document.querySelectorAll(
+				'.js-liveblog-body > .block',
+			);
+			return allBlocks[allBlocks.length - 1] ?? null;
+		});
+	}
 
-const getPreviousContentBlock = (element: HTMLElement): HTMLElement | null => {
-	const prevElement = element.previousSibling;
-	if (!(prevElement instanceof HTMLElement)) return null;
+	const prevElement = topAdvert.previousSibling as Element | null;
+	if (prevElement === null) return null;
 
 	if (prevElement.classList.contains('block')) {
 		return prevElement;
 	}
 
-	return getPreviousContentBlock(prevElement);
+	return getFirstContentBlock(prevElement);
 };
 
-const insertMoreAds = () => {
+const lookForSpacesForAdSlots = async () => {
+	// window.mockLiveUpdate({
+	// 	numNewBlocks: 4,
+	// 	html:
+	// 		'<article id="block-656081891e3862dd912f4123" class="block dcr-1p37fdd-LiveBlockContainer"><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /></article>' +
+	// 		'<article id="block-656081891e3862dd912f4234" class="block dcr-1p37fdd-LiveBlockContainer"><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /></article>' +
+	// 		'<article id="block-656081891e3862dd912f4345" class="block dcr-1p37fdd-LiveBlockContainer"><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /></article>' +
+	// 		'<article id="block-656081891e3862dd912f4456" class="block dcr-1p37fdd-LiveBlockContainer"><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /><p>New block</p><br /></article>',
+	// 	mostRecentBlockId: 'abc',
+	// });
+
 	const isMobile = getCurrentBreakpoint() === 'mobile';
+	const slotSelector = `.ad-slot-container.ad-slot-${
+		isMobile ? 'mobile' : 'desktop'
+	}`;
 
-	let adContainerClass = '.ad-slot-container';
-	if (IS_SERVER_SIDE_MODE) {
-		adContainerClass += `.ad-slot-${isMobile ? 'mobile' : 'desktop'}`;
-	}
-
-	if (AD_COUNTER < MAX_ADS) {
-		if (IS_SERVER_SIDE_MODE) {
-			const topAdvert: HTMLElement | null = document.querySelector(
-				`.js-liveblog-body > ${adContainerClass}`,
-			);
-			if (topAdvert === null) {
-				firstSlot = undefined;
-			} else {
-				const nearestContentBlock = getPreviousContentBlock(topAdvert);
-				firstSlot = nearestContentBlock ?? undefined;
+	return fastdom
+		.measure(() => {
+			const numSlots = document.querySelectorAll(slotSelector).length;
+			if (numSlots >= MAX_ADS) {
+				throw new Error('At ad slot limit. Cannot insert any more.');
 			}
-		} else {
-			const el = document.querySelector(
-				`.js-liveblog-body > ${adContainerClass}`,
-			);
-			if (el && el.previousSibling instanceof HTMLElement) {
-				firstSlot = el.previousSibling;
-			} else {
-				firstSlot = undefined;
-			}
-		}
 
-		startListening();
-	} else {
-		firstSlot = undefined;
-	}
+			AD_COUNTER = numSlots;
+		})
+		.then(() => {
+			const topAdvert = document.querySelector(
+				`.js-liveblog-body > ${slotSelector}`,
+			);
+
+			return getFirstContentBlock(topAdvert);
+		})
+		.then((firstContentBlock) => {
+			if (!firstContentBlock) {
+				throw new Error(
+					'Cannot find a content block to start inserting new ads',
+				);
+			}
+
+			return fastdom
+				.measure(() => document.documentElement.clientHeight)
+				.then((windowHeight) =>
+					getSpaceFillerRules(
+						firstContentBlock as HTMLElement,
+						windowHeight,
+					),
+				)
+				.then(fillSpace);
+		});
 };
 
-const fill = (rules: SpacefinderRules) => {
-	const options: SpacefinderOptions = { pass: 'inline1' };
+const startListening = () => {
+	// eslint-disable-next-line no-use-before-define -- circular reference
+	document.addEventListener('liveblog:blocks-updated', onUpdate);
+};
 
-	return spaceFiller.fillSpace(rules, insertAds, options).then(insertMoreAds);
+const stopListening = () => {
+	// eslint-disable-next-line no-use-before-define -- circular reference
+	document.removeEventListener('liveblog:blocks-updated', onUpdate);
+};
+
+const onUpdate = (): void => {
+	stopListening();
+
+	void lookForSpacesForAdSlots();
 };
 
 /**
- * Initialise liveblog ad slots
+ * This module will insert inline ad slots into the page if there is space available.
+ *
+ * When new content is pushed to a liveblog, an event will be fired from DCR and
+ * listened for here. Starting at the lowest content block that is directly above
+ * an inline ad slot, it will inspect each content block above it and insert
+ * ads in appropriate spaces.
  */
 export const init = (): Promise<void> => {
 	if (!commercialFeatures.liveblogAdverts) {
 		return Promise.resolve();
 	}
 
-	const isMobile = getCurrentBreakpoint() === 'mobile';
+	void startListening();
 
-	// Temporary measure to identify whether we're in server-side inline ad insertion mode.
-	// Client-side ad insertion functionality will be removed very soon.
-	const numMobileAdsInServerSideMode = document.querySelectorAll(
-		'.ad-slot-container.ad-slot-mobile',
-	).length;
-	IS_SERVER_SIDE_MODE = numMobileAdsInServerSideMode > 0;
+	// setTimeout(() => {
+	// 	console.log('dispatchEvent');
+	// 	document.dispatchEvent(new CustomEvent('liveblog:blocks-updated'));
+	// }, 10000);
 
-	if (IS_SERVER_SIDE_MODE) {
-		log(
-			'commercial',
-			'Server side inline ads mode. No client-side inline ad slots inserted',
-		);
-		const selector = `.ad-slot-container.ad-slot-${
-			isMobile ? 'mobile' : 'desktop'
-		}`;
-
-		AD_COUNTER = document.querySelectorAll(selector).length;
-
-		return fastdom
-			.measure(() => {
-				WINDOWHEIGHT = document.documentElement.clientHeight;
-				return WINDOWHEIGHT;
-			})
-			.then(insertMoreAds);
-	}
-
-	return fastdom
-		.measure(() => {
-			WINDOWHEIGHT = document.documentElement.clientHeight;
-		})
-		.then(() => getSpaceFillerRules(false))
-		.then(fill);
+	return Promise.resolve();
 };
 
 export const _ = { getSlotName };

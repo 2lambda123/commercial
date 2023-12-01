@@ -10,27 +10,21 @@ const { getSlotName } = _;
 jest.mock('utils/report-error', () => ({
 	reportError: jest.fn(),
 }));
-
 jest.mock('header-bidding/prebid/prebid', () => ({
 	requestBids: jest.fn(),
 }));
-
 jest.mock('ophan-tracker-js', () => null);
-
 jest.mock('utils/mediator');
-
 jest.mock('spacefinder/space-filler', () => ({
 	spaceFiller: {
 		fillSpace: jest.fn(() => Promise.resolve(true)),
 	},
 }));
-
 jest.mock('lib/commercial-features', () => ({
 	commercialFeatures: {
 		liveblogAdverts: true,
 	},
 }));
-
 jest.mock('dfp/fill-dynamic-advert-slot');
 
 const spaceFillerStub = spaceFiller.fillSpace as jest.MockedFunction<
@@ -74,12 +68,12 @@ describe('Liveblog Dynamic Adverts', () => {
 
 	it('should return the correct slot name', () => {
 		const firstMobileSlot = getSlotName(true, 0);
-		const otherMobileSlot = getSlotName(true, 2);
-		const desktopSlot = getSlotName(false, 0);
+		const thirdMobileSlot = getSlotName(true, 2);
+		const firstDesktopSlot = getSlotName(false, 0);
 
 		expect(firstMobileSlot).toBe('top-above-nav');
-		expect(otherMobileSlot).toBe('inline2');
-		expect(desktopSlot).toBe('inline1');
+		expect(thirdMobileSlot).toBe('inline2');
+		expect(firstDesktopSlot).toBe('inline1');
 	});
 
 	it('should insert ad slots', async () => {

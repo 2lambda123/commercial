@@ -20,6 +20,7 @@ const blogs: GuPage[] = [
 		}),
 		name: 'ad-limit',
 		expectedMinInlineSlotsOnDesktop: 4,
+		expectedMinInlineSlotsOnMobile: 6,
 	},
 	{
 		path: getTestUrl({
@@ -27,8 +28,8 @@ const blogs: GuPage[] = [
 			path: '/business/live/2023/aug/07/halifax-house-prices-gradual-drop-annual-fall-in-july-interest-rates-mortgages-business-live',
 			type: 'liveblog',
 		}),
-		expectedMinInlineSlotsOnDesktop: 4,
-		expectedMinInlineSlotsOnMobile: 5,
+		expectedMinInlineSlotsOnDesktop: 5,
+		expectedMinInlineSlotsOnMobile: 7,
 	},
 ];
 
