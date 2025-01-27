@@ -1641,9 +1641,9 @@
   integrity sha512-lmuz8kIG5PeRjyjq1S9CMlfczOLxUdT+3UD8jYk3VZkGgLjN+3IX0e3GK7mMo/SnIojxLOD8x3tiVRCPjfiUdQ==
 
 "@guardian/identity-auth@^1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@guardian/identity-auth/-/identity-auth-1.0.0.tgz#ea8896a45d2aef9828e590cccdd858b5f46785d1"
-  integrity sha512-JUkPai2Qnuq1quQ2rtvwWhLTtISqJBNe8XpxqbIr4jGaNWn5EL3kI1scAwq5PyNEg9135E7YXWTnjLNkm3ivoA==
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/@guardian/identity-auth/-/identity-auth-1.1.1.tgz#2e468e8fd2391d7efd25b5c25110f736d2a5a8da"
+  integrity sha512-3tAlnMUx6p+GXRd05P1lSGEBYq8OnZT7J8iYIjmPfe3YUgGbZQlZJGJhaaS0UqKFpDtkf8LVmlUegboNbLO2Uw==
 
 "@guardian/libs@15.6.4", "@guardian/libs@^15.6.4":
   version "15.6.4"
