@@ -1650,10 +1650,10 @@
   resolved "https://registry.yarnpkg.com/@guardian/identity-auth/-/identity-auth-1.1.1.tgz#2e468e8fd2391d7efd25b5c25110f736d2a5a8da"
   integrity sha512-3tAlnMUx6p+GXRd05P1lSGEBYq8OnZT7J8iYIjmPfe3YUgGbZQlZJGJhaaS0UqKFpDtkf8LVmlUegboNbLO2Uw==
 
-"@guardian/libs@15.6.4", "@guardian/libs@^15.6.4":
-  version "15.6.4"
-  resolved "https://registry.yarnpkg.com/@guardian/libs/-/libs-15.6.4.tgz#13787065e5c58b884944c5c71d6e324c7f2e566a"
-  integrity sha512-oN+xN7FBuVKLCbbjvAMdWjgWqOtvR38acnqwAKsjUDkFsBzRWU/pueDSEGTCTTVSFcRdCKOsWnop+Vwh59P47g==
+"@guardian/libs@15.9.1", "@guardian/libs@^15.6.4":
+  version "15.9.1"
+  resolved "https://registry.yarnpkg.com/@guardian/libs/-/libs-15.9.1.tgz#6846c9f0debb19d650f1775b21314a99ea80248d"
+  integrity sha512-Mns6Gc3MQacVxQ44Ei5HaVak3y9HYQF5kZ4lZGnacJfRdWAfW9K5K5rphf7mSgqkygOGoTs5TMQ3gO37MP8hbw==
 
 "@guardian/prettier@4.0.0":
   version "4.0.0"
