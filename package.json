@@ -62,7 +62,7 @@
 		"@guardian/support-dotcom-components": "1.0.7",
 		"@playwright/test": "^1.37.1",
 		"@types/google.analytics": "^0.0.42",
-		"@types/googletag": "~3.0.3",
+		"@types/googletag": "~3.2.0",
 		"@types/jest": "^29.4.0",
 		"@types/lodash-es": "^4.17.6",
 		"@types/node": "20.11.20",
