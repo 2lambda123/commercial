@@ -61,7 +61,7 @@
 		"@guardian/source-foundations": "13.0.0",
 		"@guardian/support-dotcom-components": "1.0.7",
 		"@playwright/test": "^1.37.1",
-		"@types/google.analytics": "^0.0.42",
+		"@types/google.analytics": "^0.0.46",
 		"@types/googletag": "~3.0.3",
 		"@types/jest": "^29.4.0",
 		"@types/lodash-es": "^4.17.6",
